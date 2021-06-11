@@ -1,0 +1,44 @@
+Package: AIPW
+Title: Augmented Inverse Probability Weighting
+Version: 0.6.3.2
+Authors@R: 
+    c(person(given = "Yongqi",
+             family = "Zhong",
+             role = c("aut", "cre"),
+             email = "yq.zhong7@gmail.com",
+             comment = c(ORCID = "0000-0002-4042-7450")),
+      person(given = "Ashley",
+             family = "Naimi",
+             role = c("aut"),
+             email = "ashley.naimi@emory.edu",
+             comment = c(ORCID = "0000-0002-1510-8175")),
+      person(given = "Gabriel",
+             family = "Conzuelo",
+             role = c("ctb"),
+             email = "gabriel.conzuelo@pitt.edu"),
+      person(given = "Edward",
+             family = "Kennedy",
+             role = c("ctb"),
+             email = "edward@stat.cmu.edu"))
+Maintainer: Yongqi Zhong <yq.zhong7@gmail.com>
+Description: The 'AIPW' pacakge implements the augmented inverse probability weighting, a doubly robust estimator, for average causal effect estimation with user-defined stacked machine learning algorithms. To cite the 'AIPW' package, please use: "Yongqi Zhong, Edward H. Kennedy, Lisa M. Bodnar, Ashley I. Naimi (2021, In Press). AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects. American Journal of Epidemiology". Visit: <https://yqzhong7.github.io/AIPW/> for more information.
+License: GPL-3
+Encoding: UTF-8
+Language: es
+LazyData: true
+Suggests: testthat (>= 2.1.0), knitr, rmarkdown, covr, tmle
+RoxygenNote: 7.1.0
+Imports: stats, utils, R6, SuperLearner, ggplot2, future.apply,
+        progressr, Rsolnp
+URL: https://github.com/yqzhong7/AIPW
+BugReports: https://github.com/yqzhong7/AIPW/issues
+VignetteBuilder: knitr
+Depends: R (>= 2.10)
+NeedsCompilation: no
+Packaged: 2021-06-10 14:44:41 UTC; k
+Author: Yongqi Zhong [aut, cre] (<https://orcid.org/0000-0002-4042-7450>),
+  Ashley Naimi [aut] (<https://orcid.org/0000-0002-1510-8175>),
+  Gabriel Conzuelo [ctb],
+  Edward Kennedy [ctb]
+Repository: CRAN
+Date/Publication: 2021-06-11 09:30:02 UTC
