@@ -5,10 +5,13 @@
 #' @docType class
 #'
 #' @importFrom R6 R6Class
+#' @importFrom stats predict
+#' @importFrom utils head
+#' @importFrom ggplot2 ggplot aes geom_density theme_bw labs
 #'
 #' @return \code{AIPW} base object
 #' @seealso [AIPW] and [AIPW_tmle]
-#' @format \code{\link{R6Class}} object.
+#' @format \CRANpkg{R6} object.
 #' @export
 AIPW_base <- R6::R6Class(
   "AIPW_base",
@@ -20,7 +23,7 @@ AIPW_base <- R6::R6Class(
     n = NULL,
     #Number of exposed
     n_A1 = NULL,
-    #Number ofunexposed
+    #Number of unexposed
     n_A0 = NULL,
     #Fit the outcome model stratified by exposure status (only applicable to AIPW class or manual setup)
     stratified_fitted = FALSE,
@@ -139,7 +142,7 @@ AIPW_base <- R6::R6Class(
       self$result <- cbind(matrix(c(self$estimates$risk_A1, self$estimates$risk_A0,
                                     self$estimates$RD), nrow=3, byrow=T),
                            c( self$n_A1, self$n_A0,rep(self$n,1)))
-      row.names(self$result) <- c("Risk of exposure", "Risk of control","Risk Difference")
+      row.names(self$result) <- c("Risk of Exposure", "Risk of Control","Risk Difference")
       colnames(self$result) <- c("Estimate","SE","95% LCL","95% UCL","N")
 
       if (private$Y.type == 'binomial'){
@@ -173,6 +176,10 @@ AIPW_base <- R6::R6Class(
         self$result <- rbind(self$result, ATT_ATC_result)
       }
 
+      #### Change row names for continuous outcome
+      if (private$Y.type == 'gaussian'){
+        row.names(self$result) = gsub("Risk", "Mean", row.names(self$result))
+      }
 
       if (private$verbose){
         print(self$result,digit=3)

@@ -3,6 +3,14 @@
 #' @description An R6Class of AIPW for estimating the average causal effects with users' inputs of exposure, outcome, covariates and related
 #' libraries for estimating the efficient influence function.
 #'
+#' @importFrom stats predict
+#' @importFrom utils head
+#' @importFrom SuperLearner SuperLearner
+#' @importFrom ggplot2 ggplot aes geom_density theme_bw labs
+#' @importFrom future.apply future_lapply
+#' @importFrom progressr progressor
+#' @importFrom Rsolnp solnp
+#'
 #' @details An AIPW object is constructed by `new()` with users' inputs of data and causal structures, then it `fit()` the data using the
 #' libraries in `Q.SL.library` and `g.SL.library` with `k_split` cross-fitting, and provides results via the `summary()` method.
 #' After using `fit()` and/or `summary()` methods, propensity scores  and inverse probability weights by exposure status can be
@@ -34,7 +42,7 @@
 #' ## Constructor Argument Details
 #' \describe{
 #'   \item{\code{W}, \code{W.Q} & \code{W.g}}{It can be a vector, matrix or data.frame. If and only if `W == NULL`, `W` would be replaced by `W.Q` and `W.g`. }
-#'   \item{\code{Q.SL.library} & \code{g.SL.library}}{Machine learning algorithms from [SuperLearner] libraries}
+#'   \item{\code{Q.SL.library} & \code{g.SL.library}}{Machine learning algorithms from \CRANpkg{SuperLearner} libraries or `sl3` learner object (Lrnr_base)}
 #'   \item{\code{k_split}}{It ranges from 1 to number of observation-1.
 #'                         If k_split=1, no cross-fitting; if k_split>=2, cross-fitting is used
 #'                         (e.g., `k_split=10`, use 9/10 of the data to estimate and the remaining 1/10 leftover to predict).
@@ -64,14 +72,14 @@
 #'  \code{result}         \tab   `summary()`                \tab     A matrix contains RD, ATT, ATC, RR and OR with their SE and 95%CI \cr
 #'  \code{g.plot}         \tab   `plot.p_score()`           \tab     A density plot of propensity scores by exposure status\cr
 #'  \code{ip_weights.plot}         \tab   `plot.ip_weights()`           \tab     A box plot of inverse probability weights \cr
-#'  \code{libs}           \tab   `fit()`                    \tab     [SuperLearner] libraries and their fitted objects \cr
-#'  \code{sl.fit}         \tab   Constructor                \tab     A wrapper function for fitting [SuperLearner] \cr
+#'  \code{libs}           \tab   `fit()`                    \tab     \CRANpkg{SuperLearner} or sl3 libraries and their fitted objects \cr
+#'  \code{sl.fit}         \tab   Constructor                \tab     A wrapper function for fitting \CRANpkg{SuperLearner} or sl3 \cr
 #'  \code{sl.predict}     \tab   Constructor                \tab     A wrapper function using \code{sl.fit} to predict \cr
 #'  }
 #'
 #' ## Public Variable Details
 #' \describe{
-#'    \item{\code{stratified_fit}}{An indicator for whether the outcome model is fitted stratified by exposure status in the`fit()` method.
+#'    \item{\code{stratified_fit}}{An indicator for whether the outcome model is fitted stratified by exposure status in the `fit()` method.
 #'    Only when using `stratified_fit()` to turn on `stratified_fit = TRUE`, `summary` outputs average treatment effects among the treated and the controls.}
 #'    \item{\code{obs_est}}{After using `fit()` and `summary()` methods, this list contains the propensity scores (`p_score`),
 #'    counterfactual predictions (`mu`, `mu1` & `mu0`) and
@@ -82,7 +90,7 @@
 #'
 #' @return \code{AIPW} object
 #'
-#' @references Zhong Y, Kennedy EH, Bodnar LM, Naimi AI (2021, In Press). AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects. \emph{American Journal of Epidemiology}.
+#' @references Zhong Y, Kennedy EH, Bodnar LM, Naimi AI (2021). AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects. \emph{American Journal of Epidemiology}.
 #' @references Robins JM, Rotnitzky A (1995). Semiparametric efficiency in multivariate regression models with missing data. \emph{Journal of the American Statistical Association}.
 #' @references Chernozhukov V, Chetverikov V, Demirer M, et al (2018). Double/debiased machine learning for treatment and structural parameters. \emph{The Econometrics Journal}.
 #' @references Kennedy EH, Sjolander A, Small DS (2015). Semiparametric causal inference in matched cohort studies. \emph{Biometrika}.
@@ -180,9 +188,14 @@ AIPW <- R6::R6Class(
           private$sl.learners = grep("SL.",lsf.str(globalenv()),value = T)
           lapply(private$sl.learners, function(x) assign(x=x,value=get(x,globalenv()),envir=private$sl.env))
           #change wrapper functions
-          self$sl.fit = function(Y, X, SL.library, CV){
+          self$sl.fit = function(Y, X, SL.library, CV, Q.model=TRUE){
+            if (Q.model){
+              Y.type = private$Y.type
+            } else{
+              Y.type = 'binomial'
+            }
             suppressMessages({
-              fit <- SuperLearner::SuperLearner(Y = Y, X = X, SL.library = SL.library, family= private$Y.type,
+              fit <- SuperLearner::SuperLearner(Y = Y, X = X, SL.library = SL.library, family= Y.type,
                                                 env=private$sl.env, cvControl = CV)
             })
             return(fit)
@@ -196,8 +209,29 @@ AIPW <- R6::R6Class(
         } else{
           stop("Input Q.SL.library and/or g.SL.library is not a valid SuperLearner library")
         }
-      }  else {
-        stop("Input Q.SL.library and/or g.SL.library is not a valid SuperLearner library")
+      } else if (any(class(Q.SL.library) == "Lrnr_base") & any(class(g.SL.library) == "Lrnr_base")) {
+        #only using Stack in sl3 will return estimates of each library separately
+        if (any(class(Q.SL.library) == "Stack") & any(class(g.SL.library) == "Stack")){
+          warning("Only using sl3::Stack may cause problem. Please consider using metalearners for the stacked libraries!")
+        } else {
+          #change wrapper functions
+          self$sl.fit = function(X, Y, SL.library, CV){
+            dat <- data.frame(cbind(Y,X))
+            dat_colnames <- colnames(dat)
+            task <- sl3::sl3_Task$new(dat, covariates = colnames(dat)[-1],
+                                      outcome = colnames(dat)[1], outcome_type = "binomial"
+            )
+            fit <- SL.library$train(task)
+            return(fit)
+          }
+          self$sl.predict = function(fit, newdata){
+            new_task <- sl3::sl3_Task$new(newdata, covariates = colnames(newdata))
+            pred <- fit$predict(new_task)
+            return(pred)
+          }
+        }
+      } else {
+        stop("Input Q.SL.library and/or g.SL.library is not a valid SuperLearner/sl3 library")
       }
 
       #input sl libraries
@@ -215,17 +249,15 @@ AIPW <- R6::R6Class(
         stop("`verbose` is not valid")
       }
       #check if SuperLearner and/or sl3 library is loaded
-      if (!any(names(sessionInfo()$otherPkgs) %in% c("SuperLearner"))){
-        warning("`SuperLearner` package is not loaded.")
+      if (!any(names(sessionInfo()$otherPkgs) %in% c("SuperLearner","sl3"))){
+        warning("Either `SuperLearner` or `sl3` package is not loaded.")
       }
       #-------check if future.apply is loaded otherwise lapply would be used.------#
       if (any(names(sessionInfo()$otherPkgs) %in% c("future.apply"))){
-        private$.f_lapply = function(iter,func) {
-          future.apply::future_lapply(iter,func,future.seed = T,future.packages = private$sl.pkg,future.globals = TRUE)
-        }
-      }else{
-        private$.f_lapply = function(iter,func) lapply(iter,func)
-        }
+        private$use.f_lapply = TRUE
+      } else {
+        private$use.f_lapply = FALSE
+      }
     },
 
 
@@ -319,7 +351,8 @@ AIPW <- R6::R6Class(
           g.fit <- self$sl.fit(Y=private$AxObserved[train_index],
                                X=train_set.g,
                                SL.library = self$libs$g.SL.library,
-                               CV= cv_param)
+                               CV= cv_param,
+                               Q.model = FALSE)
           # predict on validation set
           raw_p_score  <- self$sl.predict(g.fit,newdata = validation_set.g)  #g_pred
 
@@ -521,7 +554,16 @@ AIPW <- R6::R6Class(
     isLoaded_progressr = FALSE,
     #private methods
     #lapply or future_lapply
-    .f_lapply =NULL,
+    use.f_lapply = NULL,
+    .f_lapply = function(iter,func) {
+      #-------check if future.apply is loaded otherwise lapply would be used.------#
+      if (private$use.f_lapply){
+        future.apply::future_lapply(iter,func,future.seed = T,future.packages = private$sl.pkg,future.globals = TRUE)
+      }
+      else{
+        lapply(iter,func)
+      }
+    },
     #create new index for training set
     .new_cv_index = function(val_fold,fold_length=private$cv$fold_length, k_split=private$k_split){
       train_fold_length = c(0,fold_length[-val_fold])

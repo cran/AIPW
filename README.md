@@ -3,17 +3,13 @@ AIPW: Augmented Inverse Probability Weighting
 
 <!-- badges: start -->
 
-[![Project Status: Active – The project has reached a stable, usable
-state and is being actively
-developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![Codecov test
-coverage](https://codecov.io/gh/yqzhong7/AIPW/branch/master/graph/badge.svg)](https://codecov.io/gh/yqzhong7/AIPW?branch=master)
-[![Travis build
-status](https://travis-ci.com/yqzhong7/AIPW.svg?branch=master)](https://travis-ci.com/yqzhong7/AIPW)
-[![R build
-status](https://github.com/yqzhong7/AIPW/workflows/R-CMD-check/badge.svg)](https://github.com/yqzhong7/AIPW/actions)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Codecov test coverage](https://codecov.io/gh/yqzhong7/AIPW/branch/master/graph/badge.svg)](https://app.codecov.io/gh/yqzhong7/AIPW?branch=master)
+[![R build status](https://github.com/yqzhong7/AIPW/workflows/R-CMD-check/badge.svg)](https://github.com/yqzhong7/AIPW/actions)
+[![](https://www.r-pkg.org/badges/version/AIPW?color=blue)](https://cran.r-project.org/package=AIPW)
 
 <!-- badges: end -->
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 **Contributors:** [Yongqi Zhong](https://github.com/yqzhong7), [Ashley
@@ -35,42 +31,108 @@ assumptions (e.g., consistency) before using this package.
 If you find this package is helpful, please consider to cite:
 
     @article{zhong_aipw_2021,
-      author = "Zhong, Y., Kennedy, E.H., Bodnar, L.M., Naimi, A.I. ",
-      title = "AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects",
-      year = {2021},
-      note = "In Press",
-      journal = "American Journal of Epidemiology"
+        author = {Zhong, Yongqi and Kennedy, Edward H and Bodnar, Lisa M and Naimi, Ashley I},
+        title = {AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects},
+        journal = {American Journal of Epidemiology},
+        year = {2021},
+        month = {07},
+        issn = {0002-9262},
+        doi = {10.1093/aje/kwab207},
+        url = {https://doi.org/10.1093/aje/kwab207},
     }
-
-**\* CRAN version only supports SuperLearner and tmle. Please install
-the Github version (master branch) to use sl3 and tmle3.**
 
 ------------------------------------------------------------------------
 
 ## Contents:
 
--   ##### [Installation](#Installation)
+- ##### [Updates](#Updates)
 
--   ##### [Example](#Example)
+- ##### [Installation](#Installation)
 
-    -   ###### [Setup example data](#data)
+- ##### [Example](#Example)
 
-    -   ###### [One line version](#one_line)
+  - ###### [Setup example data](#data)
 
--   ##### [Parallelization and progress bar](#par)
+  - ###### [One line version](#one_line)
 
--   ##### [Use tmle/tmle3 as input](#tmle)
+- ##### [Repeated Fitting](#rep)
 
--   ##### [References](#ref)
+- ##### [Parallelization and progress bar](#par)
+
+- ##### [Use tmle/tmle3 as input](#tmle)
+
+- ##### [References](#ref)
+
+------------------------------------------------------------------------
+
+## <a id="Updates"></a>Updates
+
+### 2025-04-05 Updates
+
+#### Repeated Cross-fitting
+
+The major new feature introduced is the `Repeated` class, which allows
+for repeated cross-fitting procedures to mitigate randomness due to data
+splits in machine learning-based estimation as suggested by Chernozhukov
+et al. (2018). This feature: - Enables running the cross-fitting
+procedure multiple times to produce more stable estimates - Provides
+methods to summarize results using median-based approaches - Supports
+parallelization with `future.apply` - Includes visualization of estimate
+distributions across repetitions - See the [Repeated Cross-fitting
+vignette](vignettes/Repated_Crossfitting.Rmd) for more details
+
+#### Continuous Outcome Support Improvements
+
+- Fixed handling of continuous outcomes for exposure models (#50)
+- Improved handling of non-binary treatments
+- Fixed Q.model for continuous outcomes
+
+#### Infrastructure Improvements
+
+- Updated GitHub Actions workflows for R-CMD-check, test coverage, and
+  pkgdown
+- Removed Travis CI in favor of GitHub Actions
+- Enhanced test coverage with additional tests for the new Repeated
+  class
+- Updated documentation and namespace for new functionality
+
+#### Support Changes
+
+- New GitHub versions (after v0.6.3.1) no longer support sl3 and tmle3
+- Users requiring sl3 and tmle3 support should install via
+  `remotes::install_github("yqzhong7/AIPW@aje_version")`
+
+#### Bug Fixes
+
+- Fixed repeated fitting when stratified_fit is enabled
+- Fixed handling of Q.model
+- Added proper error handling for various edge cases
+- Fixed continuous outcome for exposure model
+- Improved cross-fitting to reduce randomness (#38)
 
 ------------------------------------------------------------------------
 
 ## <a id="Installation"></a>Installation
 
+### CRAN version
+
+``` r
+install.packages("AIPW")
+```
+
+### Github version
+
 ``` r
 install.packages("remotes")
 remotes::install_github("yqzhong7/AIPW")
 ```
+
+**\* CRAN version only supports SuperLearner and tmle. New GitHub
+versions (after v0.6.3.1) no longer support sl3 and tmle3. If you are
+still interested in using the version with sl3 and tmle3 support, please
+install `remotes::install_github("yqzhong7/AIPW@aje_version")` <s>Please
+install the Github version (master branch) if you choose to use sl3 and
+tmle3.</s>**
 
 ## <a id="Example"></a>Example
 
@@ -79,8 +141,8 @@ remotes::install_github("yqzhong7/AIPW")
 ``` r
 set.seed(888)
 data("eager_sim_obs")
-outcome <- eager_sim_obs$sim_A
-exposure <- eager_sim_obs$sim_Y
+outcome <- eager_sim_obs$sim_Y
+exposure <- eager_sim_obs$sim_A
 #covariates for both outcome model (Q) and exposure model (g)
 covariates <- as.matrix(eager_sim_obs[-1:-2])
 
@@ -93,9 +155,13 @@ covariates <- as.matrix(eager_sim_obs[-1:-2])
 library(AIPW)
 library(SuperLearner)
 #> Loading required package: nnls
+#> Loading required package: gam
+#> Loading required package: splines
+#> Loading required package: foreach
+#> Loaded gam 1.20.2
 #> Super Learner
-#> Version: 2.0-26
-#> Package created on 2019-10-27
+#> Version: 2.0-28
+#> Package created on 2021-05-04
 library(ggplot2)
 AIPW_SL <- AIPW$new(Y = outcome,
                     A = exposure,
@@ -105,8 +171,8 @@ AIPW_SL <- AIPW$new(Y = outcome,
                     k_split = 3,
                     verbose=FALSE)$
   fit()$
-  #Default truncation is set to 0.025; using 0.25 here is for illustrative purposes and not recommended
-  summary(g.bound = 0.25)$ 
+  #Default truncation
+  summary(g.bound = 0.025)$ 
   plot.p_score()$
   plot.ip_weights()
 ```
@@ -118,11 +184,11 @@ To see the results, set `verbose = TRUE`(default) or:
 ``` r
 print(AIPW_SL$result, digits = 2)
 #>                  Estimate    SE 95% LCL 95% UCL   N
-#> Risk of exposure     0.68 0.053  0.5765    0.78  78
-#> Risk of control      0.54 0.046  0.4458    0.63 122
-#> Risk Difference      0.14 0.070  0.0059    0.28 200
-#> Risk Ratio           1.27 0.116  1.0099    1.59 200
-#> Odds Ratio           1.84 0.307  1.0084    3.36 200
+#> Risk of Exposure     0.44 0.046  0.3528    0.53 118
+#> Risk of Control      0.31 0.051  0.2061    0.41  82
+#> Risk Difference      0.14 0.068  0.0048    0.27 200
+#> Risk Ratio           1.45 0.191  0.9974    2.11 200
+#> Odds Ratio           1.81 0.295  1.0144    3.22 200
 ```
 
 To obtain average treatment effect among the treated/controls (ATT/ATC),
@@ -141,13 +207,13 @@ suppressWarnings({
 })
 #> Done!
 #>                     Estimate     SE  95% LCL 95% UCL   N
-#> Risk of exposure       0.672 0.0555  0.56310   0.781  78
-#> Risk of control        0.546 0.0462  0.45537   0.637 122
-#> Risk Difference        0.126 0.0724 -0.01581   0.268 200
-#> Risk Ratio             1.231 0.1187  0.97537   1.553 200
-#> Odds Ratio             1.704 0.3144  0.91994   3.155 200
-#> ATT Risk Difference    0.125 0.0624  0.00262   0.247 200
-#> ATC Risk Difference    0.121 0.1058 -0.08662   0.328 200
+#> Risk of Exposure      0.4352 0.0467  0.34362   0.527 118
+#> Risk of Control       0.3244 0.0513  0.22385   0.425  82
+#> Risk Difference       0.1108 0.0684 -0.02320   0.245 200
+#> Risk Ratio            1.3416 0.1858  0.93210   1.931 200
+#> Odds Ratio            1.6048 0.2927  0.90429   2.848 200
+#> ATT Risk Difference   0.0991 0.0880 -0.07339   0.272 200
+#> ATC Risk Difference   0.1148 0.0634 -0.00946   0.239 200
 ```
 
 You can also use the `aipw_wrapper()` to wrap `new()`, `fit()` and
@@ -164,13 +230,66 @@ AIPW_SL <- aipw_wrapper(Y = outcome,
                         stratified_fit=F)$plot.p_score()$plot.ip_weights()
 ```
 
+## <a id="rep"></a>Repeated Fitting
+
+The `Repeated` class allows for repeated cross-fitting procedures to
+mitigate randomness due to data splits. This approach is recommended in
+machine learning-based estimation as suggested by Chernozhukov et
+al. (2018).
+
+``` r
+library(SuperLearner)
+library(ggplot2)
+
+# First create a regular AIPW object
+aipw_obj <- AIPW$new(Y = outcome,
+                     A = exposure,
+                     W = covariates, 
+                     Q.SL.library = c("SL.mean","SL.glm"),
+                     g.SL.library = c("SL.mean","SL.glm"),
+                     k_split = 3,
+                     verbose = FALSE)
+
+# Create a repeated fitting object from the AIPW object
+repeated_aipw <- Repeated$new(aipw_obj)
+
+# Perform repeated fitting 20 times
+repeated_aipw$repfit(num_reps = 20, stratified = FALSE)
+
+# Summarize results using median-based methods
+repeated_aipw$summary_median()
+
+# You can also visualize the distribution of estimates across repetitions
+estimates_df <- repeated_aipw$repeated_estimates
+ggplot(estimates_df, aes(x = Estimate, fill = Estimand)) +
+  geom_density(alpha = 0.5) +
+  theme_minimal() +
+  labs(title = "Distribution of Estimates Across Repeated Fittings",
+       subtitle = "Based on 20 repetitions",
+       x = "Estimate Value",
+       y = "Density")
+```
+
+Setting `stratified = TRUE` in the `repfit()` function will use the
+stratified fitting procedure for each repetition:
+
+``` r
+# Using stratified fitting
+repeated_aipw_strat <- Repeated$new(aipw_obj)
+repeated_aipw_strat$repfit(num_reps = 20, stratified = TRUE)
+repeated_aipw_strat$summary_median()
+```
+
+Note that the `Repeated` class also supports parallelization with
+`future.apply` as described below.
+
 ## <a id="par"></a>Parallelization with `future.apply` and progress bar with `progressr`
 
 In default setting, the `AIPW$fit()` method will be run sequentially.
 The current version of AIPW package supports parallel processing
 implemented by
-[future.apply](https://github.com/HenrikBengtsson/future.apply) package
-under the [future](https://github.com/HenrikBengtsson/future) framework.
+[future.apply](https://github.com/futureverse/future.apply) package
+under the [future](https://github.com/futureverse/future) framework.
 Simply use `future::plan()` to enable parallelization and `set.seed()`
 to take care of the random number generation (RNG) problem:
 
@@ -180,13 +299,14 @@ to take care of the random number generation (RNG) problem:
 library(future.apply)
 #> Loading required package: future
 future::plan(multiprocess, workers=2, gc=T)
-#> Warning: [ONE-TIME WARNING] Forked processing ('multicore') is disabled
-#> in future (>= 1.13.0) when running R from RStudio, because it is
-#> considered unstable. Because of this, plan("multicore") will fall
-#> back to plan("sequential"), and plan("multiprocess") will fall back to
-#> plan("multisession") - not plan("multicore") as in the past. For more details,
-#> how to control forked processing or not, and how to silence this warning in
-#> future R sessions, see ?future::supportsMulticore
+#> Warning: Strategy 'multiprocess' is deprecated in future (>= 1.20.0)
+#> [2020-10-30]. Instead, explicitly specify either 'multisession' (recommended) or
+#> 'multicore'. In the current R session, 'multiprocess' equals 'multisession'.
+#> Warning in supportsMulticoreAndRStudio(...): [ONE-TIME WARNING] Forked
+#> processing ('multicore') is not supported when running R from RStudio
+#> because it is considered unstable. For more details, how to control forked
+#> processing or not, and how to silence this warning in future R sessions, see ?
+#> parallelly::supportsMulticore
 set.seed(888)
 
 ###Same procedure for AIPW as described above###
@@ -198,24 +318,24 @@ AIPW_SL <- AIPW$new(Y = outcome,
                     k_split = 3,
                     verbose=TRUE)$fit()$summary()
 #> Done!
-#>                  Estimate     SE  95% LCL 95% UCL   N
-#> Risk of exposure    0.676 0.0546  0.56913   0.783  78
-#> Risk of control     0.538 0.0462  0.44705   0.628 122
-#> Risk Difference     0.139 0.0714 -0.00144   0.279 200
-#> Risk Ratio          1.258 0.1177  0.99869   1.584 200
-#> Odds Ratio          1.796 0.3104  0.97745   3.300 200
+#>                  Estimate     SE 95% LCL 95% UCL   N
+#> Risk of Exposure    0.443 0.0462 0.35284   0.534 118
+#> Risk of Control     0.306 0.0510 0.20607   0.406  82
+#> Risk Difference     0.137 0.0677 0.00482   0.270 200
+#> Risk Ratio          1.449 0.1906 0.99741   2.106 200
+#> Odds Ratio          1.807 0.2946 1.01442   3.219 200
 ```
 
 Progress bar that supports parallel processing is available in the
 `AIPW$fit()` method through the API from
-[progressr](https://github.com/HenrikBengtsson/progressr) package:
+[progressr](https://github.com/futureverse/progressr) package:
 
 ``` r
 library(progressr)
 #define the type of progress bar
 handlers("progress")
 #reporting through progressr::with_progress() which is embedded in the AIPW$fit() method
-with_progress(
+with_progress({
   AIPW_SL <- AIPW$new(Y = outcome,
                     A = exposure,
                     W = covariates, 
@@ -223,9 +343,9 @@ with_progress(
                     g.SL.library = c("SL.mean","SL.glm"),
                     k_split = 3,
                     verbose=FALSE)$fit()$summary()
-)
+})
 #also available for the wrapper
-with_progress(
+with_progress({
   AIPW_SL <- aipw_wrapper(Y = outcome,
                         A = exposure,
                         W = covariates, 
@@ -233,74 +353,101 @@ with_progress(
                         g.SL.library = c("SL.mean","SL.glm"),
                         k_split = 3,
                         verbose=FALSE)
-)
+})
 ```
 
-## <a id="tmle"></a>Use `tmle` fitted object as input (`AIPW_tmle` class)
+## <a id="tmle"></a>Use `tmle`/`tmle3` fitted object as input (`AIPW_tmle` class)
 
-`AIPW_tmle` class is designed for using `tmle` fitted object as input
+`AIPW_tmle` class is designed for using `tmle`/`tmle3` fitted object as
+input
 
-#### `tmle`
+#### 1. `tmle`
 
 ``` r
 require(tmle)
 #> Loading required package: tmle
 #> Loading required package: glmnet
 #> Loading required package: Matrix
-#> Loaded glmnet 4.0
-#> Welcome to the tmle package, version 1.4.0.1
+#> Loaded glmnet 4.1-6
+#> Welcome to the tmle package, version 1.5.0-1.1
 #> 
-#> Use tmleNews() to see details on changes and bug fixes
+#> Major changes since v1.3.x. Use tmleNews() to see details on changes and bug fixes
 require(SuperLearner)
-tmle_fit <- tmle(Y = outcome, A = exposure,W = covariates,
+tmle_fit <- tmle(Y = as.vector(outcome), A = as.vector(exposure),W = covariates,
                  Q.SL.library=c("SL.mean","SL.glm"),
                  g.SL.library=c("SL.mean","SL.glm"),
                  family="binomial")
 tmle_fit
 #>  Additive Effect
-#>    Parameter Estimate:  0.14389
-#>    Estimated Variance:  0.0048764
-#>               p-value:  0.039348
-#>     95% Conf Interval: (0.0070199, 0.28076) 
+#>    Parameter Estimate:  0.12795
+#>    Estimated Variance:  0.0043047
+#>               p-value:  0.051161
+#>     95% Conf Interval: (-0.00064797, 0.25654) 
 #> 
 #>  Additive Effect among the Treated
-#>    Parameter Estimate:  0.14419
-#>    Estimated Variance:  0.0048673
-#>               p-value:  0.038752
-#>     95% Conf Interval: (0.0074516, 0.28093) 
+#>    Parameter Estimate:  0.13118
+#>    Estimated Variance:  0.0045329
+#>               p-value:  0.051365
+#>     95% Conf Interval: (-0.00077957, 0.26314) 
 #> 
 #>  Additive Effect among the Controls
-#>    Parameter Estimate:  0.14318
-#>    Estimated Variance:  0.0048874
-#>               p-value:  0.040552
-#>     95% Conf Interval: (0.0061575, 0.2802) 
+#>    Parameter Estimate:  0.12446
+#>    Estimated Variance:  0.00414
+#>               p-value:  0.05307
+#>     95% Conf Interval: (-0.0016502, 0.25057) 
 #> 
 #>  Relative Risk
-#>    Parameter Estimate:  1.2696
-#>               p-value:  0.039067
-#>     95% Conf Interval: (1.012, 1.5927) 
+#>    Parameter Estimate:  1.4093
+#>               p-value:  0.064957
+#>     95% Conf Interval: (0.97895, 2.0288) 
 #> 
-#>               log(RR):  0.23871
-#>     variance(log(RR)):  0.013383 
+#>               log(RR):  0.34308
+#>     variance(log(RR)):  0.034558 
 #> 
 #>  Odds Ratio
-#>    Parameter Estimate:  1.8362
-#>               p-value:  0.045369
-#>     95% Conf Interval: (1.0126, 3.3297) 
+#>    Parameter Estimate:  1.7316
+#>               p-value:  0.057367
+#>     95% Conf Interval: (0.98296, 3.0504) 
 #> 
-#>               log(OR):  0.6077
-#>     variance(log(OR)):  0.092213
+#>               log(OR):  0.54905
+#>     variance(log(OR)):  0.083461
 #extract fitted tmle object to AIPW
 AIPW_tmle$
   new(A=exposure,Y=outcome,tmle_fit = tmle_fit,verbose = TRUE)$
   summary(g.bound=0.025)
 #> Cross-fitting is supported only within the outcome model from a fitted tmle object (with cvQinit = TRUE)
-#>                  Estimate     SE 95% LCL 95% UCL   N
-#> Risk of exposure    0.678 0.0529 0.57380   0.781  78
-#> Risk of control     0.534 0.0455 0.44450   0.623 122
-#> Risk Difference     0.144 0.0698 0.00702   0.281 200
-#> Risk Ratio          1.270 0.1157 1.01198   1.593 200
-#> Odds Ratio          1.836 0.3037 1.01244   3.330 200
+#>                  Estimate     SE   95% LCL 95% UCL   N
+#> Risk of Exposure    0.441 0.0447  0.352877   0.528 118
+#> Risk of Control     0.313 0.0503  0.214003   0.411  82
+#> Risk Difference     0.128 0.0656 -0.000648   0.257 200
+#> Risk Ratio          1.409 0.1814  0.987632   2.011 200
+#> Odds Ratio          1.732 0.2814  0.997604   3.006 200
+```
+
+#### 2. `tmle3`
+
+\_\_New GitHub versions (after v0.6.3.1) no longer support sl3 and
+tmle3. If you are still interested in using the version with sl3 and
+tmle3 support, please install
+\`remotes::install_github(“<yqzhong7/AIPW@aje>\_version”)\_\_
+
+``` r
+remotes::install_github("yqzhong7/AIPW@aje_version")
+library(sl3)
+library(tmle3)
+node_list <- list(A = "sim_A",Y = "sim_Y",W = colnames(eager_sim_obs)[-1:-2])
+or_spec <- tmle_OR(baseline_level = "0",contrast_level = "1")
+tmle_task <- or_spec$make_tmle_task(eager_sim_obs,node_list)
+lrnr_glm <- make_learner(Lrnr_glm)
+lrnr_mean <- make_learner(Lrnr_mean)
+sl <- Lrnr_sl$new(learners = list(lrnr_glm,lrnr_mean))
+learner_list <- list(A = sl, Y = sl)
+tmle3_fit <- tmle3(or_spec, data=eager_sim_obs, node_list, learner_list)
+
+# parse tmle3_fit into AIPW_tmle class
+AIPW_tmle$
+  new(A=eager_sim_obs$sim_A,Y=eager_sim_obs$sim_Y,tmle_fit = tmle3_fit,verbose = TRUE)$
+  summary()
 ```
 
 ------------------------------------------------------------------------

@@ -45,7 +45,7 @@ See examples for illustration.
 
 \describe{
 \item{\code{W}, \code{W.Q} & \code{W.g}}{It can be a vector, matrix or data.frame. If and only if \code{W == NULL}, \code{W} would be replaced by \code{W.Q} and \code{W.g}. }
-\item{\code{Q.SL.library} & \code{g.SL.library}}{Machine learning algorithms from \link{SuperLearner} libraries}
+\item{\code{Q.SL.library} & \code{g.SL.library}}{Machine learning algorithms from \CRANpkg{SuperLearner} libraries or \code{sl3} learner object (Lrnr_base)}
 \item{\code{k_split}}{It ranges from 1 to number of observation-1.
 If k_split=1, no cross-fitting; if k_split>=2, cross-fitting is used
 (e.g., \code{k_split=10}, use 9/10 of the data to estimate and the remaining 1/10 leftover to predict).
@@ -79,14 +79,14 @@ If k_split=1, no cross-fitting; if k_split>=2, cross-fitting is used
 \code{result}         \tab   \code{summary()}                \tab     A matrix contains RD, ATT, ATC, RR and OR with their SE and 95\%CI \cr
 \code{g.plot}         \tab   \code{plot.p_score()}           \tab     A density plot of propensity scores by exposure status\cr
 \code{ip_weights.plot}         \tab   \code{plot.ip_weights()}           \tab     A box plot of inverse probability weights \cr
-\code{libs}           \tab   \code{fit()}                    \tab     \link{SuperLearner} libraries and their fitted objects \cr
-\code{sl.fit}         \tab   Constructor                \tab     A wrapper function for fitting \link{SuperLearner} \cr
+\code{libs}           \tab   \code{fit()}                    \tab     \CRANpkg{SuperLearner} or sl3 libraries and their fitted objects \cr
+\code{sl.fit}         \tab   Constructor                \tab     A wrapper function for fitting \CRANpkg{SuperLearner} or sl3 \cr
 \code{sl.predict}     \tab   Constructor                \tab     A wrapper function using \code{sl.fit} to predict \cr
 }
 \subsection{Public Variable Details}{
 
 \describe{
-\item{\code{stratified_fit}}{An indicator for whether the outcome model is fitted stratified by exposure status in the\code{fit()} method.
+\item{\code{stratified_fit}}{An indicator for whether the outcome model is fitted stratified by exposure status in the \code{fit()} method.
 Only when using \code{stratified_fit()} to turn on \code{stratified_fit = TRUE}, \code{summary} outputs average treatment effects among the treated and the controls.}
 \item{\code{obs_est}}{After using \code{fit()} and \code{summary()} methods, this list contains the propensity scores (\code{p_score}),
 counterfactual predictions (\code{mu}, \code{mu1} & \code{mu0}) and
@@ -119,7 +119,7 @@ aipw_sl$plot.p_score()
 
 }
 \references{
-Zhong Y, Kennedy EH, Bodnar LM, Naimi AI (2021, In Press). AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects. \emph{American Journal of Epidemiology}.
+Zhong Y, Kennedy EH, Bodnar LM, Naimi AI (2021). AIPW: An R Package for Augmented Inverse Probability Weighted Estimation of Average Causal Effects. \emph{American Journal of Epidemiology}.
 
 Robins JM, Rotnitzky A (1995). Semiparametric efficiency in multivariate regression models with missing data. \emph{Journal of the American Statistical Association}.
 

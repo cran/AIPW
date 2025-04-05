@@ -15,7 +15,7 @@ test_that("AIPW constructor: input data dimension", {
                                    Q.SL.library=sl.lib,
                                    g.SL.library=sl.lib,
                                    k_split = 1,verbose = FALSE),
-                 info = "`SuperLearner` package is not loaded.")
+                 info = "Either `SuperLearner` or `sl3` package is not loaded.")
   expect_equal(aipw$n,100)
   expect_equal(length(aipw$.__enclos_env__$private$A),100)
   expect_equal(length(aipw$.__enclos_env__$private$Y),100)
@@ -30,7 +30,7 @@ test_that("AIPW constructor: input data dimension", {
                                    Q.SL.library=sl.lib,
                                    g.SL.library=sl.lib,
                                    k_split = 1,verbose = FALSE),
-                 info = "`SuperLearner` package is not loaded.")
+                 info = "Either `SuperLearner` or `sl3` package is not loaded.")
   expect_equal(dim(aipw$.__enclos_env__$private$g.set),c(100,2))
   ##wrong dimension
   #single column W.g (A and W.Q have the same nrow)
@@ -91,7 +91,7 @@ test_that("AIPW constructor: W input logic", {
                                    Q.SL.library=sl.lib,
                                    g.SL.library=sl.lib,
                                    k_split = 1,verbose = FALSE),
-                 info = "`SuperLearner` package is not loaded.")
+                 info = "Either `SuperLearner` or `sl3` package is not loaded.")
   expect_equal(aipw$n,100)
   expect_equal(length(aipw$.__enclos_env__$private$A),100)
   expect_equal(length(aipw$.__enclos_env__$private$Y),100)
@@ -104,7 +104,7 @@ test_that("AIPW constructor: W input logic", {
                                    Q.SL.library=sl.lib,
                                    g.SL.library=sl.lib,
                                    k_split = 1,verbose = FALSE),
-                 info = "`SuperLearner` package is not loaded.")
+                 info = "Either `SuperLearner` or `sl3` package is not loaded.")
   expect_equal(dim(aipw$.__enclos_env__$private$g.set),c(100,2))
   expect_equal(dim(aipw$.__enclos_env__$private$Q.set),c(100,3))
 
@@ -127,7 +127,7 @@ test_that("AIPW constructor: SL libraries", {
                     Q.SL.library=sl.lib,
                     g.SL.library=sl.lib,
                     k_split = 1,verbose = FALSE),
-  regexp = "`SuperLearner` package is not loaded.")
+  regexp = "Either `SuperLearner` or `sl3` package is not loaded.")
   #sl.library writing
   expect_identical(aipw$libs$Q.SL.library,sl.lib)
   expect_identical(aipw$libs$g.SL.library,sl.lib)
